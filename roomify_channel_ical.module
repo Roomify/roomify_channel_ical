@@ -128,7 +128,7 @@ function roomify_channel_ical_admin_form($form, &$form_state, $property) {
 
   if ($ical_providers = _roomify_channel_ical_providers()) {
     foreach ($ical_providers as $type => $info) {
-      $form['ical_import']['roomify_channel_ical_import_url_' . $property->property_id . '_' . $bat_type->type_id . '_' .  $type] = array(
+      $form['ical_import']['roomify_channel_ical_import_url_' . $property->property_id . '_' . $bat_type->type_id . '_' . $type] = array(
         '#type' => 'textfield',
         '#title' => $info->title . ' URL',
         '#description' => t('Enter an iCal URL - availability will be synced from this calendar.'),
