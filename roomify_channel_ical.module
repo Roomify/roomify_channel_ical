@@ -67,16 +67,14 @@ function roomify_channel_ical_access($type) {
  * Implements hook_roomify_channel_connector_channel().
  */
 function roomify_channel_ical_roomify_channel_connector_channel($property) {
-  $content = roomify_channel_ical_admin_form($property);
+  $content = drupal_get_form('roomify_channel_ical_admin_form', $property);
   return $content;
 }
 
 /**
  * Channel management forms for type channel management tab.
  */
-function roomify_channel_ical_admin_form($property) {
-  $form = array();
-
+function roomify_channel_ical_admin_form($form, &$form_state, $property) {
   // Load the property and see if it has a single type with a single unit. If
   // not iCal won't work.
   if (count($property->property_bat_type_reference[LANGUAGE_NONE]) > 1) {
