@@ -272,7 +272,21 @@ function roomify_channel_ical_update_availability($data) {
         continue;
       }
 
+      // If this is not a booking or an unavailable period, we don't know what
+      // to do with it.
+      if ($event->type != 'booking' && $event->type != 'unavailable') {
+        continue;
+      }
+
       // We got this far, create the bat event.
+      // Set the proper state.
+      if ($event->type == 'booking') {
+        $state = bat_event_load_state_by_machine_name(BOOKED);
+      }
+      elseif ($event->type == 'unavailable') {
+        $state = bat_event_load_state_by_machine_name(NOT_AVAILABLE);
+      }
+
       $bat_type = bat_type_load($data['type_id']);
       $bat_event = bat_event_create(array(
         'type'       => 'availability',
