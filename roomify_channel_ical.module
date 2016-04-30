@@ -352,6 +352,19 @@ function roomify_channel_ical_booking_conflicts($startDate, $endDate, $unit_id) 
   $calendar = new Calendar($bat_units, $event_store);
   $events = $calendar->getEvents($start_date, $end_date);
 
+  // First deal with an extremely annoying edge case.
+  if ((count($events[$unit->unit_id]) == 1) &&
+      ($events[$unit->unit_id][0]->getValue() == 1) &&
+      ($events[$unit->unit_id][0]->getStartDate()->format('Y-m-d') == $startDate) &&
+      ($events[$unit->unit_id][0]->getEndDate()->modify('+1 day')->format('Y-m-d') == $endDate)) {
+    // If all these conditions are met, it means the BAT calendar is just
+    // telling us that the whole period is in the default state. That state ID
+    // is 1, so inconveniently if there is a Bat event entity with the
+    // ID of 1 that is in a blocking state, we will see it as a conflict.
+    return FALSE;
+  }
+
+  // See if there are any conflicting events.
   foreach ($events[$unit->unit_id] as $event) {
     $event_id = $event->getValue();
     if ($event = bat_event_load($event_id)) {
