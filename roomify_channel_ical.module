@@ -20,7 +20,6 @@ include_once 'roomify_channel_ical.features.inc';
 function roomify_channel_ical_cron() {
   global $conf;
 
-  // FIXME: only run e.g. every half hour. (configurable?)
   $queue = DrupalQueue::get('roomify_channel_ical');
 
   // Get all ical source variables.
@@ -29,7 +28,13 @@ function roomify_channel_ical_cron() {
 
     // If a URL is defined for this source, add a task to fetch events.
     if ($ical_url = variable_get($var_name, '')) {
-      $queue->createItem(array('property_id' => $property_id, 'type_id' => $type_id, 'ical_type' => $ical_type, 'ical_url' => $ical_url));
+      // Don't run more often than every half hour.
+      $last_run = variable_get('cron_last_' . $var_name, 0);
+      $now = time();
+      if (($now - $last_run) >= 1800) {
+        $queue->createItem(array('property_id' => $property_id, 'type_id' => $type_id, 'ical_type' => $ical_type, 'ical_url' => $ical_url));
+        variable_set('cron_last_' . $var_name, $now);
+      }
     }
   }
 }
