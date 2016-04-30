@@ -213,41 +213,35 @@ function roomify_channel_ical_update_availability($data) {
       $eids[] = $event->eid;
     }
 
-    // Get a list of upcoming bookings for this type.
-
     // For iCal, we can assume that we have a single unit.
     $unit = current(bat_unit_load_multiple(FALSE, array('type_id' => $data['type_id'])));
-
-    $start_date = new \DateTime();
-
-    // Get bookings from this source starting today or later for this unit.
-    $query = db_select('field_data_event_bat_unit_reference', 'feur');
-    $query->join('field_data_booking_event_reference', 'fber', 'feur.entity_id = fber.booking_event_reference_target_id');
-    $query->join('field_data_booking_start_date', 'fbsd', 'feur.entity_id = fbsd.entity_id');
-    $query->join('field_data_field_ical_type', 'fit', 'fbsd.entity_id = fit.entity_id');
-
-    $query->condition('feur.event_bat_unit_reference_target_id', $unit->unit_id)
-          ->condition('fbsd.booking_start_date_value', $start_date->format('Y-m-d 00:00:00'), '>=')
-          ->condition('fber.bundle', 'ical')
-          ->condition('fit.field_ical_type_value', $data['ical_type'])
-          ->fields('fber', array('entity_id'));
-
-    $result = $query->execute();
-
-    $bookings = array();
-    foreach ($result as $record) {
-      $bookings[] = bat_booking_load($record->entity_id);
+    if (!$unit) {
+      // Bail out if we can't get the unit.
+      return FALSE;
     }
 
-    // Delete bookings that no longer exist in the remote source.
+    // Get entities we have created from this source, ending today or later for this unit.
+    $today = new \DateTime();
+    $query = db_select('roomify_channel_ical_entities', 'ri');
+    $query->fields('ri')
+          ->condition('ri.unit_id', $unit->unit_id)
+          ->condition('ri.end_date', $today->format('Y-m-d 00:00:00'), '>=');
+    $result = $query->execute();
+
+    // Delete events/bookings that no longer exist in the remote source.
     $existing_eids = array();
-    foreach ($bookings as $booking) {
-      // If eid not present in remote, delete this booking.
-      if (!in_array($booking->field_event_id[LANGUAGE_NONE][0]['value'], $eids)) {
-        bat_booking_delete($booking);
+    foreach ($result as $record) {
+      // If eid not present in remote, delete this entity and the record.
+      if (!in_array($record->eid, $eids)) {
+        entity_delete($record->entity_type, $record->entity_id);
+        db_delete('roomify_channel_ical_entities')
+          ->condition('eid', $record->eid)
+          ->condition('entity_id', $record->entity_id)
+          ->condition('entity_type', $record->entity_type)
+          ->execute();
       }
       else {
-        $existing_eids[] = $booking->field_event_id[LANGUAGE_NONE][0]['value'];
+        $existing_eids[] = $record->eid;
       }
     }
 
@@ -296,33 +290,58 @@ function roomify_channel_ical_update_availability($data) {
         'created'    => REQUEST_TIME,
       ));
       $bat_event->event_bat_unit_reference[LANGUAGE_NONE][0]['target_id'] = $unit->unit_id;
-      $state = bat_event_load_state_by_machine_name(BOOKED);
       $bat_event->event_state_reference[LANGUAGE_NONE][0]['state_id'] = $state['id'];
       $bat_event->save();
 
-      // Create the booking.
-      $booking = array(
-        'type' => 'ical',
-        'label' => !empty($event->reservation_name) ? $event->reservation_name : $event->summary,
-        'created' => REQUEST_TIME,
-        'uid' => $bat_type->uid,
-        'booking_start_date'      => array(LANGUAGE_NONE => array(0 => array('value'     => $event->startDate))),
-        'booking_end_date'        => array(LANGUAGE_NONE => array(0 => array('value'     => $event->endDate))),
-        'booking_event_reference' => array(LANGUAGE_NONE => array(0 => array('target_id' => $bat_event->event_id))),
-        'field_event_id'          => array(LANGUAGE_NONE => array(0 => array('value'     => $event->eid))),
-        'field_reservation_id'    => array(LANGUAGE_NONE => array(0 => array('value'     => $event->reservation_id))),
-        'field_reservation_name'  => array(LANGUAGE_NONE => array(0 => array('value'     => $event->reservation_name))),
-        'field_description'       => array(LANGUAGE_NONE => array(0 => array('value'     => $event->description))),
-        'field_summary'           => array(LANGUAGE_NONE => array(0 => array('value'     => $event->summary))),
-        'field_ical_type'         => array(LANGUAGE_NONE => array(0 => array('value'     => $data['ical_type']))),
+      // Keep a record that we created this event.
+      $record = array(
+        'eid'         => $event->eid,
+        'unit_id'     => $unit->unit_id,
+        'ical_type'   => $data['ical_type'],
+        'entity_id'   => $bat_event->event_id,
+        'entity_type' => 'bat_event',
+        'start_date'  => $event->startDate,
+        'end_date'    => $event->endDate,
       );
+      drupal_write_record('roomify_channel_ical_entities', $record);
 
-      $booking = bat_booking_create($booking);
-      $booking->save();
+      // If this is a booking, create the booking entity.
+      if ($event->type == 'booking') {
+        $booking = array(
+          'type' => 'ical',
+          'label' => !empty($event->reservation_name) ? $event->reservation_name : $event->summary,
+          'created' => REQUEST_TIME,
+          'uid' => $bat_type->uid,
+          'booking_start_date'      => array(LANGUAGE_NONE => array(0 => array('value'     => $event->startDate))),
+          'booking_end_date'        => array(LANGUAGE_NONE => array(0 => array('value'     => $event->endDate))),
+          'booking_event_reference' => array(LANGUAGE_NONE => array(0 => array('target_id' => $bat_event->event_id))),
+          'field_event_id'          => array(LANGUAGE_NONE => array(0 => array('value'     => $event->eid))),
+          'field_reservation_id'    => array(LANGUAGE_NONE => array(0 => array('value'     => $event->reservation_id))),
+          'field_reservation_name'  => array(LANGUAGE_NONE => array(0 => array('value'     => $event->reservation_name))),
+          'field_description'       => array(LANGUAGE_NONE => array(0 => array('value'     => $event->description))),
+          'field_summary'           => array(LANGUAGE_NONE => array(0 => array('value'     => $event->summary))),
+          'field_ical_type'         => array(LANGUAGE_NONE => array(0 => array('value'     => $data['ical_type']))),
+        );
 
-      // Link the event to the booking.
-      $bat_event->event_booking_reference[LANGUAGE_NONE][0]['target_id'] = $booking->booking_id;
-      $bat_event->save();
+        $booking = bat_booking_create($booking);
+        $booking->save();
+
+        // Keep a record that we created this booking.
+        $record = array(
+          'eid'         => $event->eid,
+          'unit_id'     => $unit->unit_id,
+          'ical_type'   => $data['ical_type'],
+          'entity_id'   => $booking->booking_id,
+          'entity_type' => 'bat_booking',
+          'start_date'  => $event->startDate,
+          'end_date'    => $event->endDate,
+        );
+        drupal_write_record('roomify_channel_ical_entities', $record);
+
+        // Link the event to the booking.
+        $bat_event->event_booking_reference[LANGUAGE_NONE][0]['target_id'] = $booking->booking_id;
+        $bat_event->save();
+      }
     }
   }
 }
