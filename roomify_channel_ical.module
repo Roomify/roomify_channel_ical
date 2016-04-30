@@ -233,7 +233,10 @@ function roomify_channel_ical_update_availability($data) {
     foreach ($result as $record) {
       // If eid not present in remote, delete this entity and the record.
       if (!in_array($record->eid, $eids)) {
-        entity_delete($record->entity_type, $record->entity_id);
+        // Check if the entity is present before attempting to delete.
+        if (entity_load($record->entity_type, array($record->entity_id), array(), TRUE)) {
+          entity_delete($record->entity_type, $record->entity_id);
+        }
         db_delete('roomify_channel_ical_entities')
           ->condition('eid', $record->eid)
           ->condition('entity_id', $record->entity_id)
