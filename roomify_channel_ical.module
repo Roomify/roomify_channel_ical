@@ -64,14 +64,19 @@ function roomify_channel_ical_entity_delete($entity, $entity_type) {
   }
   // Clean up iCal variables.
   elseif ($entity_type == 'roomify_property') {
+    $property_id = FALSE;
+
     foreach (preg_filter('/^roomify_channel_ical_import_url_(\d*)_(\d*)_(.*)/', '$1#$2#$3#$0', array_keys($conf)) as $source) {
       list($property_id, $type_id, $ical_type, $var_name) = explode('#', $source);
       if ($property_id == $entity->property_id) {
         variable_del($var_name);
       }
     }
-    // Delete export URL var.
-    variable_del('roomify_channel_ical_export_url_' . $property_id);
+
+    if ($property_id !== FALSE) {
+      // Delete export URL var.
+      variable_del('roomify_channel_ical_export_url_' . $property_id);
+    }
   }
   elseif ($entity_type == 'bat_type') {
     foreach (preg_filter('/^roomify_channel_ical_import_url_(\d*)_(\d*)_(.*)/', '$1#$2#$3#$0', array_keys($conf)) as $source) {
