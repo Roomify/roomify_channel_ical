@@ -209,7 +209,6 @@ function roomify_channel_ical_admin_form_validate($form, &$form_state) {
  * Cron queue callback - update availability from remote source.
  */
 function roomify_channel_ical_update_availability($data) {
-  // FIXME: We need logging.
 
   $site_id = variable_get('roomify_channel_connector_site_id', '');
   $url = variable_get('roomify_channel_connector_app_url', 'http://cm.roomify.us/') . '/ical/import/' . $site_id . '/' . $data['property_id'] . '/' . $data['type_id'] . '/' . $data['ical_type'] . '/' . base64_encode($data['ical_url']);
@@ -252,6 +251,7 @@ function roomify_channel_ical_update_availability($data) {
       if (!in_array($record->eid, $eids)) {
         // Check if the entity is present before attempting to delete.
         if (entity_load($record->entity_type, array($record->entity_id), array(), TRUE)) {
+          watchdog('roomify_channel_ical', 'Deleting %et entity with ID %ei and EID %eid', array('%et' => $record->entity_type, '%ei' => $record->entity_id, '%eid' => $record->eid));
           entity_delete($record->entity_type, $record->entity_id);
         }
         db_delete('roomify_channel_ical_entities')
@@ -283,6 +283,7 @@ function roomify_channel_ical_update_availability($data) {
       // event.
       // FIXME: tell someone when this happens.
       if (roomify_channel_ical_booking_conflicts($event->startDate, $event->endDate, $unit->unit_id)) {
+        watchdog('roomify_channel_ical', 'Found conflict for event %event and unit with ID %ud', array('%event' => $event, '%ud' => $unit->unit_id));
         continue;
       }
 
