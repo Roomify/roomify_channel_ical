@@ -245,6 +245,7 @@ function roomify_channel_ical_update_availability($data) {
     $unit = current(bat_unit_load_multiple(FALSE, array('type_id' => $data['type_id'])));
     if (!$unit) {
       // Bail out if we can't get the unit.
+      watchdog('roomify_channel_ical', 'Could not load unit for type with ID %tid', array('%tid' => $data['type_id']));
       return FALSE;
     }
 
