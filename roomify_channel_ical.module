@@ -217,6 +217,13 @@ function roomify_channel_ical_update_availability($data) {
   if ($request->data) {
     $events = json_decode($request->data);
 
+    // Ensure we got a valid response.
+    if (!is_array($events) || (count($events) == 0)) {
+      watchdog('roomify_channel_ical', 'Did not receive any events from the connector, request follows.');
+      watchdog('roomify_channel_ical', print_r($request, TRUE));
+      return FALSE;
+    }
+
     // First, delete events that have disappeared from the remote source.
     $eids = array();
     foreach ($events as $event) {
