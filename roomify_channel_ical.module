@@ -56,10 +56,22 @@ function roomify_channel_ical_cron_queue_info() {
 function roomify_channel_ical_entity_delete($entity, $entity_type) {
   global $conf;
 
-  // Clean up iCal records when deleting a unit.
+  // Clean up iCal records when deleting entities.
   if ($entity_type == 'bat_unit') {
     db_delete('roomify_channel_ical_entities')
       ->condition('unit_id', $entity->unit_id)
+      ->execute();
+  }
+  elseif ($entity_type == 'bat_booking') {
+    db_delete('roomify_channel_ical_entities')
+      ->condition('entity_id', $entity->booking_id)
+      ->condition('entity_type', $entity_type)
+      ->execute();
+  }
+  elseif ($entity_type == 'bat_event') {
+    db_delete('roomify_channel_ical_entities')
+      ->condition('entity_id', $entity->event_id)
+      ->condition('entity_type', $entity_type)
       ->execute();
   }
   // Clean up iCal variables.
