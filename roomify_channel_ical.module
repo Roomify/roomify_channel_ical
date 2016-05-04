@@ -315,11 +315,15 @@ function roomify_channel_ical_update_availability($data) {
         $state = bat_event_load_state_by_machine_name(NOT_AVAILABLE);
       }
 
+      // Modify end date for how BAT needs it.
+      $event_end_date = new DateTime($event->endDate);
+      $event_end_date->sub(new DateInterval('PT1M'));
+
       $bat_type = bat_type_load($data['type_id']);
       $bat_event = bat_event_create(array(
         'type'       => 'availability',
         'start_date' => $event->startDate,
-        'end_date'   => $event->endDate,
+        'end_date'   => $event_end_date->format('Y-m-d H:i:s'),
         'uid'        => $bat_type->uid,
         'created'    => REQUEST_TIME,
       ));
@@ -356,7 +360,6 @@ function roomify_channel_ical_update_availability($data) {
           'field_summary'           => array(LANGUAGE_NONE => array(0 => array('value'     => $event->summary))),
           'field_ical_type'         => array(LANGUAGE_NONE => array(0 => array('value'     => $data['ical_type']))),
         );
-
         $booking = bat_booking_create($booking);
         $booking->save();
 
