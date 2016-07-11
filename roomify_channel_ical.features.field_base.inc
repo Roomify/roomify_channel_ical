@@ -10,6 +10,28 @@
 function roomify_channel_ical_field_default_field_bases() {
   $field_bases = array();
 
+  // Exported field_base: 'booking_price'.
+  $field_bases['booking_price'] = array(
+    'active' => 1,
+    'cardinality' => 1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'booking_price',
+    'indexes' => array(
+      'currency_price' => array(
+        0 => 'amount',
+        1 => 'currency_code',
+      ),
+    ),
+    'locked' => 1,
+    'module' => 'commerce_price',
+    'settings' => array(
+      'entity_translation_sync' => FALSE,
+    ),
+    'translatable' => 0,
+    'type' => 'commerce_price',
+  );
+
   // Exported field_base: 'field_description'.
   $field_bases['field_description'] = array(
     'active' => 1,

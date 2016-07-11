@@ -109,6 +109,48 @@ function roomify_channel_ical_field_default_field_instances() {
     ),
   );
 
+  // Exported field_instance: 'bat_booking-ical-booking_price'.
+  $field_instances['bat_booking-ical-booking_price'] = array(
+    'bundle' => 'ical',
+    'default_value' => NULL,
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'conversation' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+      'default' => array(
+        'label' => 'above',
+        'module' => 'commerce_price',
+        'settings' => array(
+          'calculation' => FALSE,
+          'conditions' => array(),
+        ),
+        'type' => 'commerce_price_formatted_amount',
+        'weight' => 9,
+      ),
+    ),
+    'entity_type' => 'bat_booking',
+    'field_name' => 'booking_price',
+    'label' => 'Price',
+    'required' => TRUE,
+    'settings' => array(
+      'entity_translation_sync' => FALSE,
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'module' => 'commerce_price',
+      'settings' => array(
+        'currency_code' => 'default',
+      ),
+      'type' => 'commerce_price_simple',
+      'weight' => 9,
+    ),
+  );
+
   // Exported field_instance: 'bat_booking-ical-booking_start_date'.
   $field_instances['bat_booking-ical-booking_start_date'] = array(
     'bundle' => 'ical',
@@ -556,6 +598,7 @@ function roomify_channel_ical_field_default_field_instances() {
   t('Event');
   t('Event ID');
   t('If an external reservation ID is available it will be stored here.');
+  t('Price');
   t('Reservation ID');
   t('Start Date');
   t('Summary');
