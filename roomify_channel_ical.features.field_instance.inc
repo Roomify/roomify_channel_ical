@@ -40,7 +40,7 @@ function roomify_channel_ical_field_default_field_instances() {
     ),
     'entity_type' => 'bat_booking',
     'field_name' => 'booking_end_date',
-    'label' => 'End Date',
+    'label' => 'Departure Date',
     'required' => FALSE,
     'settings' => array(
       'default_value' => 'blank',
@@ -181,7 +181,7 @@ function roomify_channel_ical_field_default_field_instances() {
     ),
     'entity_type' => 'bat_booking',
     'field_name' => 'booking_start_date',
-    'label' => 'Start Date',
+    'label' => 'Arrival Date',
     'required' => FALSE,
     'settings' => array(
       'default_value' => 'blank',
@@ -594,13 +594,13 @@ function roomify_channel_ical_field_default_field_instances() {
   // Translatables
   // Included for use with string extractors like potx.
   t('Description');
-  t('End Date');
+  t('Departure Date');
   t('Event');
   t('Event ID');
   t('If an external reservation ID is available it will be stored here.');
   t('Price');
   t('Reservation ID');
-  t('Start Date');
+  t('Arrival Date');
   t('Summary');
   t('The Roomify Channel Manager Event ID.');
   t('The type of iCal source (e.g. airBnb)');
