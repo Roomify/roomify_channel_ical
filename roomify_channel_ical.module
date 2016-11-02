@@ -148,10 +148,14 @@ function roomify_channel_ical_admin_form($form, &$form_state, $property) {
   if (empty($export_url)) {
     $site_id = variable_get('roomify_channel_connector_site_id', '');
     $cm_export_url = variable_get('roomify_channel_connector_app_url', 'http://cm.roomify.us/') . 'ical/export_url/' . $site_id . '/' . $property->property_id . '/' . $bat_type->type_id . '/availability';
-    $request = drupal_http_request($cm_export_url);
+    $site_token = variable_get('roomify_channel_connector_site_token');
+    $headers = array(
+      'Authorization' => $site_token,
+    );
+    $request = drupal_http_request($cm_export_url, array('headers' => $headers));
     if ($request->data) {
       variable_set('roomify_channel_ical_export_url_' . $property->property_id, $request->data);
-      $export_url = $request->data;
+      $export_url = variable_get('roomify_channel_connector_app_url', 'http://cm.roomify.us/') . json_decode($request->data);
     }
   }
 
@@ -224,7 +228,11 @@ function roomify_channel_ical_update_availability($data) {
 
   $site_id = variable_get('roomify_channel_connector_site_id', '');
   $url = variable_get('roomify_channel_connector_app_url', 'http://cm.roomify.us/') . 'ical/import/' . $site_id . '/' . $data['property_id'] . '/' . $data['type_id'] . '/' . $data['ical_type'] . '/' . base64_encode($data['ical_url']);
-  $request = drupal_http_request($url);
+  $site_token = variable_get('roomify_channel_connector_site_token');
+  $headers = array(
+    'Authorization' => $site_token,
+  );
+  $request = drupal_http_request($url, array('headers' => $headers));
   if ($request->data) {
     $events = json_decode($request->data);
 
@@ -453,7 +461,12 @@ function roomify_channel_ical_booking_conflicts($startDate, $endDate, $unit_id) 
  */
 function _roomify_channel_ical_providers() {
   $cm_provider_url = variable_get('roomify_channel_connector_app_url', 'http://cm.roomify.us/') . 'ical/importers';
-  $request = drupal_http_request($cm_provider_url);
+  $site_token = variable_get('roomify_channel_connector_site_token');
+  $headers = array(
+    'Authorization' => $site_token,
+  );
+
+  $request = drupal_http_request($cm_provider_url, array('headers' => $headers));
   if ($request->data) {
     return json_decode($request->data);
   }
