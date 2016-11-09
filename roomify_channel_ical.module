@@ -212,7 +212,10 @@ function roomify_channel_ical_admin_form($form, &$form_state, $property) {
 function roomify_channel_ical_admin_form_validate($form, &$form_state) {
   $ical_providers = _roomify_channel_ical_providers();
   foreach ($ical_providers as $type => $title) {
-    $url = $form_state['values']['roomify_channel_ical_import_url_' . $form_state['values']['property_id'] . '_' . $form_state['values']['type_id'] . '_' . $type];
+    $url = trim($form_state['values']['roomify_channel_ical_import_url_' . $form_state['values']['property_id'] . '_' . $form_state['values']['type_id'] . '_' . $type]);
+
+    // Save trimmed URL to prevent validation errors.
+    $form_state['values']['roomify_channel_ical_import_url_' . $form_state['values']['property_id'] . '_' . $form_state['values']['type_id'] . '_' . $type] = $url;
 
     // Ensure we have a valid absolute URL.
     if (strlen($url) && !valid_url($url, TRUE)) {
