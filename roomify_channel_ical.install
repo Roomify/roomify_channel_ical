@@ -9,7 +9,7 @@
  */
 function roomify_channel_ical_schema() {
   $schema['roomify_channel_ical_entities'] = array(
-    'description' => t('Store information about entities created by the iCal source.'),
+    'description' => 'Store information about entities created by the iCal source.',
     'fields' => array(
       'eid' => array(
         'type' => 'varchar',
