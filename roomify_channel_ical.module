@@ -253,8 +253,8 @@ function roomify_channel_ical_update_availability($data) {
     $today = new \DateTime();
     $query = db_select('roomify_channel_ical_entities', 'ri');
     $query->fields('ri')
-          ->condition('ri.unit_id', $unit->unit_id)
-          ->condition('ri.end_date', $today->format('Y-m-d 00:00:00'), '>=');
+      ->condition('ri.unit_id', $unit->unit_id)
+      ->condition('ri.end_date', $today->format('Y-m-d 00:00:00'), '>=');
     $result = $query->execute();
 
     // Delete events/bookings that no longer exist in the remote source.
@@ -333,13 +333,13 @@ function roomify_channel_ical_update_availability($data) {
 
       // Keep a record that we created this event.
       $record = array(
-        'eid'         => $event->eid,
-        'unit_id'     => $unit->unit_id,
-        'ical_type'   => $data['ical_type'],
-        'entity_id'   => $bat_event->event_id,
+        'eid' => $event->eid,
+        'unit_id' => $unit->unit_id,
+        'ical_type' => $data['ical_type'],
+        'entity_id' => $bat_event->event_id,
         'entity_type' => 'bat_event',
-        'start_date'  => $event->startDate,
-        'end_date'    => $event->endDate,
+        'start_date' => $event->startDate,
+        'end_date' => $event->endDate,
       );
       drupal_write_record('roomify_channel_ical_entities', $record);
 
@@ -350,15 +350,15 @@ function roomify_channel_ical_update_availability($data) {
           'label' => !empty($event->reservation_name) ? $event->reservation_name : $event->summary,
           'created' => REQUEST_TIME,
           'uid' => $bat_type->uid,
-          'booking_start_date'      => array(LANGUAGE_NONE => array(0 => array('value'     => $event->startDate))),
-          'booking_end_date'        => array(LANGUAGE_NONE => array(0 => array('value'     => $event->endDate))),
+          'booking_start_date' => array(LANGUAGE_NONE => array(0 => array('value' => $event->startDate))),
+          'booking_end_date' => array(LANGUAGE_NONE => array(0 => array('value' => $event->endDate))),
           'booking_event_reference' => array(LANGUAGE_NONE => array(0 => array('target_id' => $bat_event->event_id))),
-          'field_event_id'          => array(LANGUAGE_NONE => array(0 => array('value'     => $event->eid))),
-          'field_reservation_id'    => array(LANGUAGE_NONE => array(0 => array('value'     => $event->reservation_id))),
-          'field_reservation_name'  => array(LANGUAGE_NONE => array(0 => array('value'     => $event->reservation_name))),
-          'field_description'       => array(LANGUAGE_NONE => array(0 => array('value'     => $event->description))),
-          'field_summary'           => array(LANGUAGE_NONE => array(0 => array('value'     => $event->summary))),
-          'field_ical_type'         => array(LANGUAGE_NONE => array(0 => array('value'     => $data['ical_type']))),
+          'field_event_id' => array(LANGUAGE_NONE => array(0 => array('value' => $event->eid))),
+          'field_reservation_id' => array(LANGUAGE_NONE => array(0 => array('value' => $event->reservation_id))),
+          'field_reservation_name' => array(LANGUAGE_NONE => array(0 => array('value' => $event->reservation_name))),
+          'field_description' => array(LANGUAGE_NONE => array(0 => array('value' => $event->description))),
+          'field_summary' => array(LANGUAGE_NONE => array(0 => array('value' => $event->summary))),
+          'field_ical_type' => array(LANGUAGE_NONE => array(0 => array('value' => $data['ical_type']))),
         );
         $booking = bat_booking_create($booking);
         $booking->save();
@@ -393,9 +393,9 @@ function roomify_channel_ical_booking_exists($startDate, $endDate, $unit_id) {
   $query->join('field_data_booking_end_date', 'fbed', 'fber.entity_id = fbed.entity_id');
 
   $query->condition('feur.event_bat_unit_reference_target_id', $unit_id)
-        ->condition('fbsd.booking_start_date_value', $startDate . ' 00:00:00')
-        ->condition('fbed.booking_end_date_value', $endDate . ' 00:00:00')
-        ->fields('fbsd', array('entity_id'));
+    ->condition('fbsd.booking_start_date_value', $startDate . ' 00:00:00')
+    ->condition('fbed.booking_end_date_value', $endDate . ' 00:00:00')
+    ->fields('fbsd', array('entity_id'));
 
   return $query->execute()->rowCount();
 }
@@ -403,7 +403,6 @@ function roomify_channel_ical_booking_exists($startDate, $endDate, $unit_id) {
 /**
  * Helper function - check if dates conflict with a blocking event.
  */
-
 function roomify_channel_ical_booking_conflicts($startDate, $endDate, $unit_id) {
   global $databases;
 
