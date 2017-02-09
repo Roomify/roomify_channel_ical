@@ -223,7 +223,7 @@ function roomify_channel_ical_admin_form_validate($form, &$form_state) {
 function roomify_channel_ical_update_availability($data) {
 
   $site_id = variable_get('roomify_channel_connector_site_id', '');
-  $url = variable_get('roomify_channel_connector_app_url', 'http://cm.roomify.us/') . 'ical/import/' . $site_id . '/' . $data['property_id'] . '/' . $data['type_id'] . '/' . $data['ical_type'] . '/' . base64_encode($data['ical_url']);
+  $url = variable_get('roomify_channel_connector_app_url', 'http://cm.roomify.us/') . 'ical/import/' . $site_id . '/' . $data['property_id'] . '/' . $data['type_id'] . '/' . $data['ical_type'] . '/' . _roomify_channel_base64_encode($data['ical_url']);
   $request = drupal_http_request($url);
   if ($request->data) {
     $events = json_decode($request->data);
@@ -456,4 +456,11 @@ function _roomify_channel_ical_providers() {
   if ($request->data) {
     return json_decode($request->data);
   }
+}
+
+/**
+ * URL-safe base64 encoding function.
+ */
+function _roomify_channel_base64_encode($input) {
+  return strtr(base64_encode($input), '+/=', '._-');
 }
