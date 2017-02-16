@@ -148,14 +148,18 @@ function roomify_channel_ical_admin_form($form, &$form_state, $property) {
   if (empty($export_url)) {
     $site_id = variable_get('roomify_channel_connector_site_id', '');
     $cm_export_url = variable_get('roomify_channel_connector_app_url', 'http://cm.roomify.us/') . 'ical/export_url/' . $site_id . '/' . $property->property_id . '/' . $bat_type->type_id . '/availability';
+
     $site_token = variable_get('roomify_channel_connector_site_token');
     $headers = array(
       'Authorization' => $site_token,
     );
     $request = drupal_http_request($cm_export_url, array('headers' => $headers));
-    if ($request->data) {
+    if ($request->code == 200 && $request->data) {
       variable_set('roomify_channel_ical_export_url_' . $property->property_id, $request->data);
       $export_url = variable_get('roomify_channel_connector_app_url', 'http://cm.roomify.us/') . json_decode($request->data);
+    }
+    else {
+      $export_url = NULL;
     }
   }
 
@@ -164,12 +168,19 @@ function roomify_channel_ical_admin_form($form, &$form_state, $property) {
     '#title' => t('iCal availability export'),
   );
 
-  $form['ical_export']['export_url'] = array(
-    '#title' => t('iCal export link'),
-    '#markup' => '<div class="ical-export-link"><h3>iCal export link</h3>' .
-                 $export_url . ' (<a href="' . $export_url . '">download ICS file</a>)' .
-                 '</div><br />',
-  );
+  if ($export_url == NULL) {
+    $form['ical_export']['export_url'] = array(
+      '#markup' => '<div class="messages error">' . t('We ran into an error retrieving your iCal export link - please try re-loading the page.') . '</div>',
+    );
+  }
+  else {
+    $form['ical_export']['export_url'] = array(
+      '#title' => t('iCal export link'),
+      '#markup' => '<div class="ical-export-link"><h3>iCal export link</h3>' .
+                   $export_url . ' (<a href="' . $export_url . '">download ICS file</a>)' .
+                   '</div><br />',
+    );
+  }
 
   $form['ical_import'] = array(
     '#type' => 'fieldset',
