@@ -15,7 +15,27 @@ include_once 'roomify_channel_ical.features.inc';
  */
 
 /**
- * Implements hook_cron()
+ * Implements hook_menu().
+ */
+function roomify_channel_ical_menu() {
+  $items = array();
+
+  // Channel management tab for units.
+  $items['admin/bat/config/types/manage/%bat_type/channel-management'] = array(
+    'title' => 'Channel Management',
+    'page callback' => 'roomify_channel_ical_management_tab',
+    'page arguments' => array(5),
+    'access callback' => 'roomify_channel_ical_management_tab_access',
+    'access arguments' => array(5),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => '20',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_cron().
  */
 function roomify_channel_ical_cron() {
   global $conf;
@@ -40,7 +60,7 @@ function roomify_channel_ical_cron() {
 }
 
 /**
- * Implements hook_cron_queue_info()
+ * Implements hook_cron_queue_info().
  */
 function roomify_channel_ical_cron_queue_info() {
   $queues['roomify_channel_ical'] = array(
@@ -127,7 +147,7 @@ function roomify_channel_ical_roomify_channel_connector_channel($property) {
 }
 
 /**
- * Channel management forms for type channel management tab.
+ * iCal admin form for property 'Channel Management' tab.
  */
 function roomify_channel_ical_admin_form($form, &$form_state, $property) {
   // Load the property and see if it has a single type with a single unit. If
@@ -474,4 +494,116 @@ function _roomify_channel_ical_providers() {
  */
 function _roomify_channel_base64_encode($input) {
   return strtr(base64_encode($input), '+/=', '._-');
+}
+
+/**
+ * Access callback for the room type 'Channel Management' tab.
+ */
+function roomify_channel_ical_management_tab_access($bat_type) {
+  if ($bat_type->type == 'room') {
+    $units = bat_unit_load_multiple(FALSE, array('type_id' => $bat_type->type_id));
+
+    if (count($units) == 1) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
+/**
+ * Room type 'Channel Management' tab.
+ */
+function roomify_channel_ical_management_tab($bat_type) {
+  return drupal_get_form('roomify_channel_ical_admin_room_type_form', $bat_type);
+}
+
+/**
+ * iCal admin form for room type 'Channel Management' tab.
+ */
+function roomify_channel_ical_admin_room_type_form($form, &$form_state, $bat_type) {
+  $property = roomify_property_load($bat_type->field_st_property_reference[LANGUAGE_NONE][0]['target_id']);
+
+  // Retrieve the export url from the connector if we don't have it cached.
+  $export_url = variable_get('roomify_channel_ical_export_url_' . $property->property_id . '_' . $bat_type->type_id, '');
+  if (empty($export_url)) {
+    $site_id = variable_get('roomify_channel_connector_site_id', '');
+    $cm_export_url = variable_get('roomify_channel_connector_app_url', 'http://cm.roomify.us/') . 'ical/export_url/' . $site_id . '/' . $property->property_id . '/' . $bat_type->type_id . '/availability';
+    $request = drupal_http_request($cm_export_url);
+    if ($request->code == 200 && $request->data) {
+      variable_set('roomify_channel_ical_export_url_' . $property->property_id . '_' . $bat_type->type_id, $request->data);
+      $export_url = $request->data;
+    }
+    else {
+      $export_url = NULL;
+    }
+  }
+
+  $form['ical_export'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('iCal availability export'),
+  );
+
+  if ($export_url == NULL) {
+    $form['ical_export']['export_url'] = array(
+      '#markup' => '<div class="messages error">' . t('We ran into an error retrieving your iCal export link - please try re-loading the page.') . '</div>',
+    );
+  }
+  else {
+    $form['ical_export']['export_url'] = array(
+      '#title' => t('iCal export link'),
+      '#markup' => '<div class="ical-export-link"><h3>iCal export link</h3>' .
+                   $export_url . ' (<a href="' . $export_url . '">download ICS file</a>)' .
+                   '</div><br />',
+    );
+  }
+
+  $form['ical_import'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('iCal availability import'),
+  );
+
+  $form['ical_import']['property_id'] = array(
+    '#type' => 'hidden',
+    '#value' => $property->property_id,
+  );
+
+  $form['ical_import']['type_id'] = array(
+    '#type' => 'hidden',
+    '#value' => $bat_type->type_id,
+  );
+
+  if ($ical_providers = _roomify_channel_ical_providers()) {
+    foreach ($ical_providers as $type => $info) {
+      $form['ical_import']['roomify_channel_ical_import_url_' . $property->property_id . '_' . $bat_type->type_id . '_' . $type] = array(
+        '#type' => 'textfield',
+        '#title' => $info->title . ' URL',
+        '#description' => t('Enter an iCal URL - availability will be synced from this calendar.'),
+        '#maxlength' => 2000,
+        '#default_value' => variable_get('roomify_channel_ical_import_url_' . $property->property_id . '_' . $bat_type->type_id . '_' . $type, '') ? variable_get('roomify_channel_ical_import_url_' . $property->property_id . '_' . $bat_type->type_id . '_' . $type) : '',
+      );
+    }
+  }
+  else {
+    drupal_set_message(t('Unable to retrieve providers, please try again'), 'warning');
+  }
+
+  $form['#validate'][] = 'roomify_channel_ical_admin_room_type_form_validate';
+
+  return system_settings_form($form);
+}
+
+/**
+ * Validation handler for ical room type form.
+ */
+function roomify_channel_ical_admin_room_type_form_validate($form, &$form_state) {
+  $ical_providers = _roomify_channel_ical_providers();
+  foreach ($ical_providers as $type => $title) {
+    $url = $form_state['values']['roomify_channel_ical_import_url_' . $form_state['values']['property_id'] . '_' . $form_state['values']['type_id'] . '_' . $type];
+
+    // Ensure we have a valid absolute URL.
+    if (strlen($url) && !valid_url($url, TRUE)) {
+      form_set_error('roomify_channel_ical_import_url_' . $form_state['values']['property_id'] . '_' . $form_state['values']['type_id'] . '_' . $type, t('The URL %url is invalid. Enter a fully-qualified URL, such as http://www.example.com/feed.xml.', array('%url' => $url)));
+    }
+  }
 }
