@@ -284,6 +284,7 @@ function roomify_channel_ical_update_availability($data) {
     $query = db_select('roomify_channel_ical_entities', 'ri');
     $query->fields('ri')
       ->condition('ri.unit_id', $unit->unit_id)
+      ->condition('ri.ical_type', $data['ical_type'])
       ->condition('ri.end_date', $today->format('Y-m-d 00:00:00'), '>=');
     $result = $query->execute();
 
