@@ -346,11 +346,23 @@ function roomify_channel_ical_update_availability($data) {
         $state = bat_event_load_state_by_machine_name(NOT_AVAILABLE);
       }
 
+      $event_start_date = new DateTime($event->startDate);
       // Modify end date for how BAT needs it.
       $event_end_date = new DateTime($event->endDate);
       $event_end_date->sub(new DateInterval('PT1M'));
 
       $bat_type = bat_type_load($data['type_id']);
+
+      if ($event->type == 'unavailable') {
+        $calendar_response = bat_event_get_calendar_response($event_start_date, $event_end_date, array(NOT_AVAILABLE), $bat_type->type_id, 'availability', FALSE, FALSE);
+
+        // This period is already unavailable, skip to the next event.
+        if (!empty($calendar_response['included'])) {
+          watchdog('roomify_channel_ical', 'Found that period is already unavailable for event %event and unit with ID %ud', array('%event' => print_r($event, TRUE), '%ud' => $unit->unit_id));
+          continue;
+        }
+      }
+
       $bat_event = bat_event_create(array(
         'type'       => 'availability',
         'start_date' => $event->startDate,
