@@ -251,7 +251,6 @@ function roomify_channel_ical_admin_form_validate($form, &$form_state) {
  * Cron queue callback - update availability from remote source.
  */
 function roomify_channel_ical_update_availability($data) {
-
   $site_id = variable_get('roomify_channel_connector_site_id', '');
   $url = variable_get('roomify_channel_connector_app_url', 'http://cm.roomify.us/') . 'ical/import/' . $site_id . '/' . $data['property_id'] . '/' . $data['type_id'] . '/' . $data['ical_type'] . '/' . _roomify_channel_base64_encode($data['ical_url']);
   $request = drupal_http_request($url);
@@ -319,14 +318,33 @@ function roomify_channel_ical_update_availability($data) {
 
       // If a booking already exists for this unit with these dates, skip to
       // the next event.
-      if (roomify_channel_ical_booking_exists($event->startDate, $event->endDate, $unit->unit_id)) {
+      if ($booking_id = roomify_channel_ical_booking_exists($event->startDate, $event->endDate, $unit->unit_id)) {
+        $data = array(
+          'start_date' => $event->startDate,
+          'end_date' => $event->endDate,
+          'type_id' => $data['type_id'],
+          'ical_type' => $data['ical_type'],
+          'ical_url' => $data['ical_url'],
+        );
+
+        roomify_channel_connector_conflict_log('ical', $data['property_id'], 'Booking conflict', $booking_id, $data);
+
         continue;
       }
 
       // If a blocking event conflicts with these dates, skip to the next
       // event.
-      // FIXME: tell someone when this happens.
       if (roomify_channel_ical_booking_conflicts($event->startDate, $event->endDate, $unit->unit_id)) {
+        $data = array(
+          'start_date' => $event->startDate,
+          'end_date' => $event->endDate,
+          'type_id' => $data['type_id'],
+          'ical_type' => $data['ical_type'],
+          'ical_url' => $data['ical_url'],
+        );
+
+        roomify_channel_connector_conflict_log('ical', $data['property_id'], 'Found conflict', 0, $data);
+
         watchdog('roomify_channel_ical', 'Found conflict for event %event and unit with ID %ud', array('%event' => print_r($event, TRUE), '%ud' => $unit->unit_id));
         continue;
       }
@@ -441,7 +459,7 @@ function roomify_channel_ical_booking_exists($startDate, $endDate, $unit_id) {
     ->condition('fbed.booking_end_date_value', $endDate . ' 00:00:00')
     ->fields('fbsd', array('entity_id'));
 
-  return $query->execute()->rowCount();
+  return $query->execute()->fetchField();
 }
 
 /**
