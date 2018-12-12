@@ -319,7 +319,7 @@ function roomify_channel_ical_update_availability($data) {
       // If a booking already exists for this unit with these dates, skip to
       // the next event.
       if ($booking_id = roomify_channel_ical_booking_exists($event->startDate, $event->endDate, $unit->unit_id)) {
-        $data = array(
+        $log_data = array(
           'start_date' => $event->startDate,
           'end_date' => $event->endDate,
           'type_id' => $data['type_id'],
@@ -327,7 +327,7 @@ function roomify_channel_ical_update_availability($data) {
           'ical_url' => $data['ical_url'],
         );
 
-        roomify_channel_connector_conflict_log('ical', $data['property_id'], $event->eid, 'Booking conflict', $booking_id, $data);
+        roomify_channel_connector_conflict_log('ical', $data['property_id'], $event->eid, 'Booking conflict', $booking_id, $log_data);
 
         continue;
       }
@@ -335,7 +335,7 @@ function roomify_channel_ical_update_availability($data) {
       // If a blocking event conflicts with these dates, skip to the next
       // event.
       if (roomify_channel_ical_booking_conflicts($event->startDate, $event->endDate, $unit->unit_id)) {
-        $data = array(
+        $log_data = array(
           'start_date' => $event->startDate,
           'end_date' => $event->endDate,
           'type_id' => $data['type_id'],
@@ -343,7 +343,7 @@ function roomify_channel_ical_update_availability($data) {
           'ical_url' => $data['ical_url'],
         );
 
-        roomify_channel_connector_conflict_log('ical', $data['property_id'], $event->eid, 'Found conflict', 0, $data);
+        roomify_channel_connector_conflict_log('ical', $data['property_id'], $event->eid, 'Found conflict', 0, $log_data);
 
         watchdog('roomify_channel_ical', 'Found conflict for event %event and unit with ID %ud', array('%event' => print_r($event, TRUE), '%ud' => $unit->unit_id));
         continue;
